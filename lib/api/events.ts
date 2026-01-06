@@ -4,6 +4,7 @@ import { Event } from '@/lib/types'
 // Types for creating/updating events
 export type CreateEventData = Omit<Event, 'id' | 'created_at' | 'organizer_id'> & {
     organizer_id?: string
+    form_schema?: any
 }
 
 export type UpdateEventData = Partial<CreateEventData>

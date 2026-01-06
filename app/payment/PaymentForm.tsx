@@ -4,14 +4,15 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { Upload, CreditCard, Smartphone, Wallet, CheckCircle2, Loader2 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
 
 export default function PaymentForm() {
     const router = useRouter()
-    const { user, isLoading } = useAuth({
+    const { user, isLoading: isAuthLoading } = useAuth({
         requireAuth: true,
         redirectTo: '/login',
     })
@@ -20,14 +21,17 @@ export default function PaymentForm() {
     const [paymentProof, setPaymentProof] = useState<File | null>(null)
     const [isProcessing, setIsProcessing] = useState(false)
     const [paymentSuccess, setPaymentSuccess] = useState(false)
+    const [eventData, setEventData] = useState<any>(null)
 
-    const eventData = {
-        name: "Mountain Ridge Trail Run",
-        distance: "10K Trail",
-        date: "March 15, 2025",
-        price: 55,
-        serviceFee: 0
-    }
+    useEffect(() => {
+        const storedData = sessionStorage.getItem('pendingRegistration')
+        if (storedData) {
+            setEventData(JSON.parse(storedData))
+        } else {
+            // Redirect if no registration data found
+            router.push('/events')
+        }
+    }, [router])
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -37,6 +41,7 @@ export default function PaymentForm() {
     }
 
     const handleSubmitPayment = async () => {
+        if (!eventData) return
         setIsProcessing(true)
 
         // Simulate payment processing
@@ -46,8 +51,8 @@ export default function PaymentForm() {
 
             // Save payment data to sessionStorage
             const paymentData = {
-                eventId: 1,
-                eventName: eventData.name,
+                eventId: eventData.eventId,
+                eventName: eventData.eventName,
                 amount: eventData.price,
                 paymentMethod: paymentMethod,
                 paymentDate: new Date().toISOString(),
@@ -66,6 +71,7 @@ export default function PaymentForm() {
     }
 
     const handleCardPayment = () => {
+        if (!eventData) return
         // Simulate Stripe/payment gateway integration
         setIsProcessing(true)
         setTimeout(() => {
@@ -73,8 +79,8 @@ export default function PaymentForm() {
             setPaymentSuccess(true)
 
             const paymentData = {
-                eventId: 1,
-                eventName: eventData.name,
+                eventId: eventData.eventId,
+                eventName: eventData.eventName,
                 amount: eventData.price,
                 paymentMethod: 'card',
                 paymentDate: new Date().toISOString(),
@@ -91,12 +97,12 @@ export default function PaymentForm() {
         }, 2000)
     }
 
-    if (isLoading) {
+    if (isAuthLoading || !eventData) {
         return (
             <div className="flex-1 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <p className="text-muted-foreground">Loading...</p>
+                    <p className="text-muted-foreground">Loading payment details...</p>
                 </div>
             </div>
         )
@@ -170,7 +176,10 @@ export default function PaymentForm() {
                                 <div className="space-y-4">
                                     <div className="bg-muted/50 p-8 rounded-lg flex justify-center">
                                         <div className="bg-white p-6 rounded-lg shadow-sm">
-                                            <img src="/qr-code-payment-qris.jpg" alt="QRIS Payment Code" className="w-64 h-64" />
+                                            {/* In a real app, this would be a dynamic QR code */}
+                                            <div className="w-64 h-64 bg-white flex items-center justify-center border-2 border-dashed">
+                                                <p className="text-center text-sm text-muted-foreground">QRIS Code Placeholder</p>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -180,7 +189,7 @@ export default function PaymentForm() {
                                             <li>Open your e-wallet or mobile banking app</li>
                                             <li>Select "Scan QR" or "QRIS" option</li>
                                             <li>Scan the QR code displayed above</li>
-                                            <li>Confirm the payment amount (${eventData.price})</li>
+                                            <li>Confirm the payment amount (Rp {eventData.price.toLocaleString('id-ID')})</li>
                                             <li>Complete the payment</li>
                                             <li>Upload your payment proof below</li>
                                         </ol>
@@ -246,7 +255,7 @@ export default function PaymentForm() {
                                         onClick={handleCardPayment}
                                         disabled={isProcessing}
                                     >
-                                        {isProcessing ? 'Processing...' : `Pay $${eventData.price}`}
+                                        {isProcessing ? 'Processing...' : `Pay Rp {eventData.price.toLocaleString('id-ID')}`}
                                     </Button>
                                     <p className="text-xs text-muted-foreground text-center">
                                         Secured by Stripe • Your payment information is encrypted
@@ -260,7 +269,7 @@ export default function PaymentForm() {
                                     <div className="bg-muted/50 p-4 rounded-lg space-y-3">
                                         <div>
                                             <p className="text-sm text-muted-foreground">Bank Name</p>
-                                            <p className="font-semibold">Bank of America</p>
+                                            <p className="font-semibold">Bank Central Asia (BCA)</p>
                                         </div>
                                         <div>
                                             <p className="text-sm text-muted-foreground">Account Number</p>
@@ -272,7 +281,7 @@ export default function PaymentForm() {
                                         </div>
                                         <div>
                                             <p className="text-sm text-muted-foreground">Amount</p>
-                                            <p className="font-semibold text-primary">${eventData.price}</p>
+                                            <p className="font-semibold text-primary">Rp {eventData.price.toLocaleString('id-ID')}</p>
                                         </div>
                                     </div>
 
@@ -318,25 +327,27 @@ export default function PaymentForm() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
-                                <p className="font-semibold text-foreground mb-1">Mountain Ridge Trail Run</p>
-                                <p className="text-sm text-muted-foreground">10K Trail Distance</p>
+                                <p className="font-semibold text-foreground mb-1">{eventData.eventName}</p>
+                                {eventData.formData?.['Distance'] && (
+                                    <p className="text-sm text-muted-foreground">{eventData.formData['Distance']}</p>
+                                )}
                             </div>
 
                             <div className="border-t border-border pt-4 space-y-2">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-muted-foreground">Registration Fee</span>
-                                    <span className="text-foreground">$55</span>
+                                    <span className="text-foreground">Rp {eventData.price.toLocaleString('id-ID')}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-muted-foreground">Service Fee</span>
-                                    <span className="text-foreground">$0</span>
+                                    <span className="text-foreground">Rp 0</span>
                                 </div>
                             </div>
 
                             <div className="border-t border-border pt-4">
                                 <div className="flex justify-between items-center">
                                     <span className="font-semibold text-foreground">Total Amount</span>
-                                    <span className="text-2xl font-bold text-primary">$55</span>
+                                    <span className="text-2xl font-bold text-primary">Rp {eventData.price.toLocaleString('id-ID')}</span>
                                 </div>
                             </div>
 

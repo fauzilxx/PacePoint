@@ -37,7 +37,7 @@ export default function HomePage() {
                 Find Your Pace, Discover Your Race
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground text-balance">
-                Whether you're chasing your first 5K or conquering mountain trails, we connect you with the perfect race. Join thousands of runners finding their next adventure.
+                Whether you're crushing your first 5K or conquering summit trails, we connect you with races that challenge and inspire. Your next adventure starts here.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
                 <Button size="lg" onClick={() => smoothScrollTo('events')}>

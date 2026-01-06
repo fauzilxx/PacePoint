@@ -23,6 +23,7 @@ export type Event = {
     status: 'draft' | 'active' | 'cancelled' | 'completed'
     created_at: string
     updated_at: string
+    form_schema?: any
 }
 
 export type Registration = {

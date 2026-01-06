@@ -6,64 +6,96 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Calendar, Loader2 } from "lucide-react"
-import { useState } from "react"
+import { useState, use, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
-import { Navbar } from "@/components/navbar" // Still need imports for loading state rendering if we include it here.
-// Wait, the page.tsx handles layout including Navbar. 
-// If useAuth loading, we typically show full screen loading which typically includes Navbar or at least centered spinner.
-// The extracted component should just be the registration form part? 
-// Or should it include the `useAuth` check and return null/loading?
-// The user asked for "page.tsx = route entry (import Navbar + Component)".
-// So Component should handle the main content.
+import { Navbar } from "@/components/navbar"
+import useSWR from "swr"
+import { eventByIdFetcher } from "@/lib/api/events"
+import { format } from "date-fns"
 
-export default function EventRegistration() {
+interface EventRegistrationProps {
+    params: Promise<{ id: string }>
+}
+
+interface FormField {
+    id: number
+    label: string
+    type: string
+    required: boolean
+}
+
+export default function EventRegistration({ params }: EventRegistrationProps) {
     const router = useRouter()
-    const { user, isLoading } = useAuth({
+    const { id } = use(params)
+    const { user, isLoading: isAuthLoading } = useAuth({
         requireAuth: true,
         requiredRole: 'runner',
         redirectTo: '/login',
     })
 
-    const [formFields] = useState([
-        { id: 1, label: "Full Name", type: "text", required: true },
-        { id: 2, label: "Email Address", type: "email", required: true },
-        { id: 3, label: "Phone Number", type: "tel", required: true },
-        {
-            id: 4,
-            label: "Distance Category",
-            type: "select",
-            required: true,
-            options: ["5K Trail", "10K Trail", "15K Trail Challenge"],
-        },
-        { id: 5, label: "Date of Birth", type: "date", required: true },
-        { id: 6, label: "T-Shirt Size", type: "select", required: true, options: ["XS", "S", "M", "L", "XL", "XXL"] },
-        { id: 7, label: "Emergency Contact Name", type: "text", required: true },
-        { id: 8, label: "Emergency Contact Phone", type: "tel", required: true },
-        { id: 9, label: "Medical Conditions (Optional)", type: "text", required: false },
-    ])
+    const eventId = id ? parseInt(id) : null
+    const { data: event, error, isLoading: isEventLoading } = useSWR(
+        eventId,
+        eventId ? eventByIdFetcher(eventId) : null
+    )
 
-    if (isLoading) {
+    const [formData, setFormData] = useState<Record<string, any>>({})
+    const [dynamicFields, setDynamicFields] = useState<FormField[]>([])
+
+    useEffect(() => {
+        if (event?.form_schema) {
+            const schema = event.form_schema as FormField[]
+            if (Array.isArray(schema) && schema.length > 0) {
+                setDynamicFields(schema)
+            } else {
+                // Fallback default fields if no schema
+                setDynamicFields([
+                    { id: 1, label: "Full Name", type: "text", required: true },
+                    { id: 2, label: "Email", type: "email", required: true },
+                    { id: 3, label: "Phone Number", type: "tel", required: true },
+                ])
+            }
+        } else if (event) {
+            // Fallback default fields if event loaded but no schema
+            setDynamicFields([
+                { id: 1, label: "Full Name", type: "text", required: true },
+                { id: 2, label: "Email", type: "email", required: true },
+                { id: 3, label: "Phone Number", type: "tel", required: true },
+            ])
+        }
+    }, [event])
+
+    if (isAuthLoading || isEventLoading) {
         return (
             <div className="flex-1 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <p className="text-muted-foreground">Loading...</p>
+                    <p className="text-muted-foreground">Loading event details...</p>
                 </div>
             </div>
         )
     }
 
-    if (!user) return null
+    if (!user || !event) return <div className="p-8 text-center">Event not found</div>
+
+    const handleInputChange = (label: string, value: any) => {
+        setFormData(prev => ({
+            ...prev,
+            [label]: value
+        }))
+    }
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
         // Save registration data using Supabase user ID
         const registrationData = {
-            eventId: 1,
-            eventName: "Mountain Ridge Trail Run",
+            eventId: event.id,
+            eventName: event.name,
             userId: user.id,
-            registrationDate: new Date().toISOString()
+            registrationDate: new Date().toISOString(),
+            formData: formData,
+            price: event.price
         }
         // Store temporarily for payment flow
         sessionStorage.setItem('pendingRegistration', JSON.stringify(registrationData))
@@ -72,16 +104,37 @@ export default function EventRegistration() {
         router.push('/payment')
     }
 
+    // Filter distances based on event data
+    const distanceOptions = event.distances || []
+
     return (
         <div className="max-w-3xl mx-auto">
             <Card>
                 <CardHeader>
                     <CardTitle className="text-3xl">Event Registration</CardTitle>
-                    <CardDescription>Complete the form below to register for Mountain Ridge Trail Run</CardDescription>
+                    <CardDescription>Register for {event.name} on {format(new Date(event.date), "PPP")}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        {formFields.map((field) => (
+
+                        {/* Always show Distance Selection if multiple available */}
+                        {distanceOptions.length > 0 && (
+                            <div className="space-y-2">
+                                <Label className="text-foreground">Distance Category <span className="text-destructive ml-1">*</span></Label>
+                                <Select required onValueChange={(val) => handleInputChange("Distance", val)}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select Distance" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {distanceOptions.map((dist) => (
+                                            <SelectItem key={dist} value={dist}>{dist}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+
+                        {dynamicFields.map((field) => (
                             <div key={field.id} className="space-y-2">
                                 <Label htmlFor={`field-${field.id}`} className="text-foreground">
                                     {field.label}
@@ -89,21 +142,24 @@ export default function EventRegistration() {
                                 </Label>
 
                                 {field.type === "select" ? (
-                                    <Select>
+                                    <Select required={field.required} onValueChange={(val) => handleInputChange(field.label, val)}>
                                         <SelectTrigger id={`field-${field.id}`}>
                                             <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {field.options?.map((option) => (
-                                                <SelectItem key={option} value={option.toLowerCase().replace(/\s+/g, "-")}>
-                                                    {option}
-                                                </SelectItem>
-                                            ))}
+                                            <SelectItem value="option1">Option 1</SelectItem>
+                                            <SelectItem value="option2">Option 2</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 ) : field.type === "date" ? (
                                     <div className="relative">
-                                        <Input id={`field-${field.id}`} type="date" required={field.required} className="pr-10" />
+                                        <Input
+                                            id={`field-${field.id}`}
+                                            type="date"
+                                            required={field.required}
+                                            className="pr-10"
+                                            onChange={(e) => handleInputChange(field.label, e.target.value)}
+                                        />
                                         <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                                     </div>
                                 ) : (
@@ -112,6 +168,7 @@ export default function EventRegistration() {
                                         type={field.type}
                                         placeholder={`Enter ${field.label.toLowerCase()}`}
                                         required={field.required}
+                                        onChange={(e) => handleInputChange(field.label, e.target.value)}
                                     />
                                 )}
                             </div>
@@ -120,7 +177,7 @@ export default function EventRegistration() {
                         <div className="pt-6 space-y-4">
                             <div className="bg-muted p-4 rounded-lg">
                                 <p className="text-sm text-muted-foreground">
-                                    <span className="font-semibold text-foreground">Registration Fee:</span> $55
+                                    <span className="font-semibold text-foreground">Registration Fee:</span> Rp {event.price.toLocaleString('id-ID')}
                                 </p>
                             </div>
 

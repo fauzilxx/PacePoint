@@ -10,13 +10,13 @@ import { usePathname } from "next/navigation"
 export function Navbar() {
   const pathname = usePathname()
   const isAuthPage = pathname === '/login' || pathname === '/register'
-  
+
   // Only load auth state if not on auth pages
   const { user, isLoading, signOut } = useAuth()
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container max-w-7xl mx-auto flex h-16 items-center justify-between px-6 md:px-12">
+      <div className="w-full flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <Image src="/logo.avif" alt="PacePoint Logo" width={32} height={32} className="h-8 w-8" />
           <span className="text-xl font-bold text-foreground">
