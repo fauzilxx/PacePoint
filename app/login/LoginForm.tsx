@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/client"
 import { Loader2 } from "lucide-react"
 
 function LoginFormContent() {
@@ -27,7 +27,7 @@ function LoginFormContent() {
     const checkAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
-        
+
         if (session?.user) {
           // Get user role and redirect to appropriate dashboard
           const { data: profile } = await supabase
@@ -35,10 +35,10 @@ function LoginFormContent() {
             .select('role')
             .eq('id', session.user.id)
             .single()
-          
+
           if (profile?.role) {
-            const redirectPath = profile.role === 'organizer' 
-              ? '/organizer/dashboard' 
+            const redirectPath = profile.role === 'organizer'
+              ? '/organizer/dashboard'
               : '/runner/dashboard'
             window.location.href = redirectPath
             return
@@ -49,7 +49,7 @@ function LoginFormContent() {
       }
       setIsCheckingAuth(false)
     }
-    
+
     checkAuth()
   }, [])
 
@@ -57,7 +57,7 @@ function LoginFormContent() {
     // Check for success messages
     const message = searchParams.get('message')
     const registered = searchParams.get('registered')
-    
+
     if (message === 'check-email') {
       setSuccessMessage('Please check your email to confirm your account before logging in.')
     } else if (registered === 'true') {
@@ -127,10 +127,10 @@ function LoginFormContent() {
       }
 
       // Redirect based on role - use window.location for hard navigation
-      const redirectPath = profile.role === 'organizer' 
-        ? '/organizer/dashboard' 
+      const redirectPath = profile.role === 'organizer'
+        ? '/organizer/dashboard'
         : '/runner/dashboard'
-      
+
       window.location.href = redirectPath
     } catch (err) {
       clearTimeout(timeout)
@@ -156,7 +156,7 @@ function LoginFormContent() {
                 {successMessage}
               </div>
             )}
-            
+
             {error && (
               <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-md">
                 {error}

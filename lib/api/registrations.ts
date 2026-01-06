@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/client'
+import { Registration } from '@/lib/types'
 
 export type RegistrationWithEvent = {
   id: number
@@ -27,6 +28,7 @@ export type RegistrationWithEvent = {
 
 // Fetch user's registrations
 export async function fetchUserRegistrations(userId: string) {
+  const supabase = createClient()
   const { data, error } = await supabase
     .from('registrations')
     .select(`
@@ -54,6 +56,7 @@ export async function fetchUserRegistrations(userId: string) {
 
 // Fetch single registration
 export async function fetchRegistration(registrationId: number) {
+  const supabase = createClient()
   const { data, error } = await supabase
     .from('registrations')
     .select(`
@@ -81,6 +84,7 @@ export async function createRegistration(registration: {
   emergency_contact_phone?: string
   medical_conditions?: string
 }) {
+  const supabase = createClient()
   const { data, error } = await supabase
     .from('registrations')
     .insert(registration)
@@ -100,6 +104,7 @@ export async function updateRegistration(
   registrationId: number,
   updates: Partial<RegistrationWithEvent>
 ) {
+  const supabase = createClient()
   const { data, error } = await supabase
     .from('registrations')
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -117,11 +122,12 @@ export async function updateRegistration(
 
 // Cancel registration
 export async function cancelRegistration(registrationId: number) {
+  const supabase = createClient()
   const { data, error } = await supabase
     .from('registrations')
-    .update({ 
+    .update({
       status: 'cancelled',
-      updated_at: new Date().toISOString() 
+      updated_at: new Date().toISOString()
     })
     .eq('id', registrationId)
     .select()

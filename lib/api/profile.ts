@@ -1,12 +1,14 @@
-import { supabase, User } from '@/lib/supabase'
+import { createClient } from '@/lib/client'
+import { User } from '@/lib/types'
 
 // Update user profile
 export async function updateUserProfile(userId: string, updates: Partial<User>) {
+  const supabase = createClient()
   const { data, error } = await supabase
     .from('profiles')
-    .update({ 
+    .update({
       ...updates,
-      updated_at: new Date().toISOString() 
+      updated_at: new Date().toISOString()
     })
     .eq('id', userId)
     .select()
@@ -22,6 +24,7 @@ export async function updateUserProfile(userId: string, updates: Partial<User>) 
 
 // Get user profile
 export async function getUserProfile(userId: string) {
+  const supabase = createClient()
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
@@ -38,6 +41,7 @@ export async function getUserProfile(userId: string) {
 
 // Update password
 export async function updatePassword(newPassword: string) {
+  const supabase = createClient()
   const { error } = await supabase.auth.updateUser({
     password: newPassword
   })
@@ -52,6 +56,7 @@ export async function updatePassword(newPassword: string) {
 
 // Update email
 export async function updateEmail(newEmail: string) {
+  const supabase = createClient()
   const { error } = await supabase.auth.updateUser({
     email: newEmail
   })

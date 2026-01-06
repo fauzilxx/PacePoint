@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/lib/client'
+// BlogPost is defined locally, so no need to import it unless we move it.
 
 export type BlogPost = {
   id: number
@@ -25,6 +26,7 @@ export type BlogPostWithAuthor = BlogPost & {
 
 // Fetch all published blog posts
 export async function fetchPublishedBlogPosts(limit?: number) {
+  const supabase = createClient()
   let query = supabase
     .from('blog_posts')
     .select(`
@@ -50,6 +52,7 @@ export async function fetchPublishedBlogPosts(limit?: number) {
 
 // Fetch single blog post by slug
 export async function fetchBlogPostBySlug(slug: string) {
+  const supabase = createClient()
   const { data, error } = await supabase
     .from('blog_posts')
     .select(`
@@ -70,6 +73,7 @@ export async function fetchBlogPostBySlug(slug: string) {
 
 // Fetch all blog posts (for organizers/admins)
 export async function fetchAllBlogPosts() {
+  const supabase = createClient()
   const { data, error } = await supabase
     .from('blog_posts')
     .select(`
@@ -88,6 +92,7 @@ export async function fetchAllBlogPosts() {
 
 // Create blog post
 export async function createBlogPost(post: Omit<BlogPost, 'id' | 'created_at' | 'updated_at'>) {
+  const supabase = createClient()
   const { data, error } = await supabase
     .from('blog_posts')
     .insert(post)
@@ -104,6 +109,7 @@ export async function createBlogPost(post: Omit<BlogPost, 'id' | 'created_at' | 
 
 // Update blog post
 export async function updateBlogPost(id: number, updates: Partial<BlogPost>) {
+  const supabase = createClient()
   const { data, error } = await supabase
     .from('blog_posts')
     .update({ ...updates, updated_at: new Date().toISOString() })
@@ -121,6 +127,7 @@ export async function updateBlogPost(id: number, updates: Partial<BlogPost>) {
 
 // Delete blog post
 export async function deleteBlogPost(id: number) {
+  const supabase = createClient()
   const { error } = await supabase
     .from('blog_posts')
     .delete()

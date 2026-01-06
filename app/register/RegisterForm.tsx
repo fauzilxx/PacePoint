@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import Link from "next/link"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { supabase } from "@/lib/supabase"
+import { supabase } from "@/lib/client"
 import { Loader2 } from "lucide-react"
 
 export default function RegisterForm() {
@@ -31,7 +31,7 @@ export default function RegisterForm() {
     const checkAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
-        
+
         if (session?.user) {
           // Get user role and redirect to appropriate dashboard
           const { data: profile } = await supabase
@@ -39,10 +39,10 @@ export default function RegisterForm() {
             .select('role')
             .eq('id', session.user.id)
             .single()
-          
+
           if (profile?.role) {
-            const redirectPath = profile.role === 'organizer' 
-              ? '/organizer/dashboard' 
+            const redirectPath = profile.role === 'organizer'
+              ? '/organizer/dashboard'
               : '/runner/dashboard'
             window.location.href = redirectPath
             return
@@ -53,7 +53,7 @@ export default function RegisterForm() {
       }
       setIsCheckingAuth(false)
     }
-    
+
     checkAuth()
   }, [])
 
@@ -212,8 +212,8 @@ export default function RegisterForm() {
             </div>
 
             <div className="flex items-start space-x-2">
-              <Checkbox 
-                id="terms" 
+              <Checkbox
+                id="terms"
                 checked={formData.agreeToTerms}
                 onCheckedChange={(checked) => setFormData({ ...formData, agreeToTerms: checked as boolean })}
               />

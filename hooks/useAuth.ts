@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase, User } from '@/lib/supabase'
+import { supabase } from '@/lib/client'
+import { User } from '@/lib/types'
 import type { Session } from '@supabase/supabase-js'
 
 interface AuthState {
@@ -25,9 +26,9 @@ export function useAuth(options: UseAuthOptions = {}) {
         session: null,
         isLoading: true,
     })
-    const initRef = useRef(false)
 
     const fetchUserProfile = useCallback(async (userId: string): Promise<User | null> => {
+        console.log('fetchUserProfile: fetching for', userId)
         try {
             const { data: userProfile, error } = await supabase
                 .from('profiles')
@@ -45,6 +46,7 @@ export function useAuth(options: UseAuthOptions = {}) {
                 return null
             }
 
+            console.log('fetchUserProfile: success', userProfile)
             return userProfile
         } catch (error) {
             console.error('Error in fetchUserProfile:', error)
@@ -53,80 +55,65 @@ export function useAuth(options: UseAuthOptions = {}) {
     }, [])
 
     useEffect(() => {
-        // Prevent double initialization in React Strict Mode
-        if (initRef.current) return
-        initRef.current = true
-
         let mounted = true
 
-        // Get initial session
-        const getInitialSession = async () => {
+        // Function to handle state updates safely
+        const handleAuthUpdate = async (session: Session | null) => {
+            if (!mounted) return
+
+            if (!session?.user) {
+                setAuthState({ user: null, session: null, isLoading: false })
+                return
+            }
+
+            // Add timeout to profile fetch to prevent infinite loading
+            const timeoutPromise = new Promise<User | null>((resolve) => {
+                setTimeout(() => {
+                    console.warn('Profile fetch timed out')
+                    resolve(null)
+                }, 5000) // 5s timeout
+            })
+
             try {
-                const { data: { session }, error } = await supabase.auth.getSession()
+                const userProfile = await Promise.race([
+                    fetchUserProfile(session.user.id),
+                    timeoutPromise
+                ])
 
                 if (!mounted) return
 
-                if (error) {
-                    console.error('Error getting session:', error)
+                if (!userProfile) {
+                    console.log('useAuth: No profile found or timed out, clearing state')
                     setAuthState({ user: null, session: null, isLoading: false })
-                    return
-                }
-
-                if (session?.user) {
-                    const userProfile = await fetchUserProfile(session.user.id)
-                    if (mounted) {
-                        // If profile fetch failed, clear the session state
-                        if (!userProfile) {
-                            setAuthState({ user: null, session: null, isLoading: false })
-                        } else {
-                            setAuthState({ 
-                                user: userProfile, 
-                                session, 
-                                isLoading: false 
-                            })
-                        }
-                    }
                 } else {
-                    if (mounted) {
-                        setAuthState({ user: null, session: null, isLoading: false })
-                    }
+                    console.log('useAuth: Setting authenticated state')
+                    setAuthState({
+                        user: userProfile,
+                        session,
+                        isLoading: false
+                    })
                 }
             } catch (error) {
-                console.error('Error in getInitialSession:', error)
+                console.error('Error in handleAuthUpdate', error)
                 if (mounted) {
                     setAuthState({ user: null, session: null, isLoading: false })
                 }
             }
         }
 
-        getInitialSession()
+        // Check current session immediately
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            handleAuthUpdate(session)
+        })
 
-        // Subscribe to auth state changes
+        // Subscribe to changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
-                if (!mounted) return
-
                 console.log('Auth state changed:', event)
-
                 if (event === 'SIGNED_OUT') {
-                    setAuthState({ user: null, session: null, isLoading: false })
-                } else if (session?.user) {
-                    const userProfile = await fetchUserProfile(session.user.id)
-                    if (mounted) {
-                        if (!userProfile) {
-                            setAuthState({ user: null, session: null, isLoading: false })
-                        } else {
-                            setAuthState({ 
-                                user: userProfile, 
-                                session, 
-                                isLoading: false 
-                            })
-                        }
-                    }
-                } else {
-                    if (mounted) {
-                        setAuthState({ user: null, session: null, isLoading: false })
-                    }
+                    if (mounted) setAuthState({ user: null, session: null, isLoading: false })
+                } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                    handleAuthUpdate(session)
                 }
             }
         )
@@ -155,7 +142,7 @@ export function useAuth(options: UseAuthOptions = {}) {
             const correctDashboard = authState.user.role === 'organizer'
                 ? '/organizer/dashboard'
                 : '/runner/dashboard'
-            
+
             // Only redirect if not already on correct dashboard
             const currentPath = typeof window !== 'undefined' ? window.location.pathname : ''
             if (currentPath !== correctDashboard) {
@@ -168,12 +155,12 @@ export function useAuth(options: UseAuthOptions = {}) {
         try {
             // Clear auth state immediately
             setAuthState({ user: null, session: null, isLoading: false })
-            
+
             const { error } = await supabase.auth.signOut()
             if (error) {
                 console.error('Error signing out:', error)
             }
-            
+
             // Use window.location for hard navigation to clear all state
             window.location.href = '/'
         } catch (error) {
@@ -187,8 +174,8 @@ export function useAuth(options: UseAuthOptions = {}) {
         const { data: { session } } = await supabase.auth.getSession()
         if (session?.user) {
             const userProfile = await fetchUserProfile(session.user.id)
-            setAuthState(prev => ({ 
-                ...prev, 
+            setAuthState(prev => ({
+                ...prev,
                 user: userProfile
             }))
         }

@@ -1,4 +1,5 @@
-import { supabase, Event } from '@/lib/supabase'
+import { createClient } from '@/lib/client'
+import { Event } from '@/lib/types'
 
 // Types for creating/updating events
 export type CreateEventData = Omit<Event, 'id' | 'created_at' | 'organizer_id'> & {
@@ -20,6 +21,7 @@ export async function fetchEvents(options?: {
     category?: 'trail' | 'road'
     limit?: number
 }) {
+    const supabase = createClient()
     let query = supabase
         .from('events')
         .select(`
@@ -60,6 +62,7 @@ export async function fetchActiveEvents(limit?: number) {
 
 // Fetch single event by ID
 export async function fetchEventById(id: number) {
+    const supabase = createClient()
     const { data, error } = await supabase
         .from('events')
         .select(`
@@ -79,6 +82,7 @@ export async function fetchEventById(id: number) {
 
 // Fetch events by organizer ID
 export async function fetchOrganizerEvents(organizerId: string) {
+    const supabase = createClient()
     const { data, error } = await supabase
         .from('events')
         .select('*')
@@ -95,6 +99,7 @@ export async function fetchOrganizerEvents(organizerId: string) {
 
 // Create a new event
 export async function createEvent(eventData: CreateEventData) {
+    const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) {
@@ -120,6 +125,7 @@ export async function createEvent(eventData: CreateEventData) {
 
 // Update an existing event
 export async function updateEvent(id: number, eventData: UpdateEventData) {
+    const supabase = createClient()
     const { data, error } = await supabase
         .from('events')
         .update(eventData)
@@ -137,6 +143,7 @@ export async function updateEvent(id: number, eventData: UpdateEventData) {
 
 // Delete an event
 export async function deleteEvent(id: number) {
+    const supabase = createClient()
     const { error } = await supabase
         .from('events')
         .delete()
