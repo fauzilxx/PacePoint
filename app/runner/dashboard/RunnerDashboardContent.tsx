@@ -135,17 +135,15 @@ export default function RunnerDashboardContent() {
             <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground">
               <button
                 onClick={() => setActiveTab('my-events')}
-                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                  activeTab === 'my-events' ? 'bg-background text-foreground shadow-sm' : ''
-                }`}
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${activeTab === 'my-events' ? 'bg-background text-foreground shadow-sm' : ''
+                  }`}
               >
                 My Registrations
               </button>
               <button
                 onClick={() => setActiveTab('available')}
-                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                  activeTab === 'available' ? 'bg-background text-foreground shadow-sm' : ''
-                }`}
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${activeTab === 'available' ? 'bg-background text-foreground shadow-sm' : ''
+                  }`}
               >
                 Available Events
               </button>
@@ -189,7 +187,7 @@ export default function RunnerDashboardContent() {
                     {registrations.map((registration) => {
                       const event = registration.event
                       if (!event) return null
-                      
+
                       return (
                         <Card key={registration.id}>
                           <CardHeader>
@@ -222,7 +220,7 @@ export default function RunnerDashboardContent() {
                               </div>
                               <div className="flex gap-2">
                                 <Button variant="outline" size="sm" asChild>
-                                  <Link href={`/events/${event.id}`}>
+                                  <Link href={`/events/${event.slug || event.id}`}>
                                     View Details
                                   </Link>
                                 </Button>
@@ -308,7 +306,7 @@ export default function RunnerDashboardContent() {
                                   <span>{event.location}</span>
                                 </div>
                               </div>
-                              
+
                               <div className="text-sm space-y-1">
                                 <p><strong>Registration Fee:</strong> Rp {event.price.toLocaleString('id-ID')}</p>
                                 <p><strong>Participants:</strong> {event.current_participants}/{event.max_participants || 'Unlimited'}</p>
@@ -319,13 +317,13 @@ export default function RunnerDashboardContent() {
 
                               <div className="flex gap-2">
                                 <Button variant="outline" size="sm" asChild className="flex-1">
-                                  <Link href={`/events/${event.id}`}>
+                                  <Link href={`/events/${event.slug || event.id}`}>
                                     View Details
                                   </Link>
                                 </Button>
                                 {!isRegistered && !isFull && (
                                   <Button size="sm" asChild className="flex-1">
-                                    <Link href={`/events/${event.id}/register`}>
+                                    <Link href={`/events/${event.slug || event.id}/register`}>
                                       Register Now
                                     </Link>
                                   </Button>

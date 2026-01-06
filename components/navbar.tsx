@@ -7,6 +7,8 @@ import { Loader2 } from "lucide-react"
 import { useAuth } from "@/hooks/useAuth"
 import { usePathname } from "next/navigation"
 
+
+
 export function Navbar() {
   const pathname = usePathname()
   const isAuthPage = pathname === '/login' || pathname === '/register'
@@ -15,7 +17,7 @@ export function Navbar() {
   const { user, isLoading, signOut } = useAuth()
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-white/80 backdrop-blur-md supports-[backdrop-filter]:bg-white/60">
       <div className="w-full flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <Image src="/logo.avif" alt="PacePoint Logo" width={32} height={32} className="h-8 w-8" />

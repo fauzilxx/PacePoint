@@ -119,7 +119,7 @@ export default function EventsList() {
                     </CardContent>
                     <CardFooter className="p-4 pt-0">
                       <Button className="w-full" asChild>
-                        <Link href={`/events/${event.id}`}>View Details</Link>
+                        <Link href={`/events/${event.slug || event.id}`}>View Details</Link>
                       </Button>
                     </CardFooter>
                   </Card>

@@ -23,6 +23,7 @@ export type RegistrationWithEvent = {
     image: string | null
     category: 'trail' | 'road'
     price: number
+    slug: string
   }
 }
 
@@ -37,10 +38,10 @@ export async function fetchUserRegistrations(userId: string) {
         id,
         name,
         date,
-        location,
         image,
         category,
-        price
+        price,
+        slug
       )
     `)
     .eq('user_id', userId)

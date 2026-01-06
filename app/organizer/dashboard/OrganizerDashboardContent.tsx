@@ -163,7 +163,7 @@ export default function OrganizerDashboardContent() {
                           </Link>
                         </Button>
                         <Button size="sm" asChild className="h-8">
-                          <Link href={`/events/${event.id}`}>
+                          <Link href={`/events/${event.slug || event.id}`}>
                             <Eye className="h-3.5 w-3.5 mr-1.5" />
                             View
                           </Link>

@@ -5,6 +5,7 @@ import { Event } from '@/lib/types'
 export type CreateEventData = Omit<Event, 'id' | 'created_at' | 'organizer_id'> & {
     organizer_id?: string
     form_schema?: any
+    slug: string
 }
 
 export type UpdateEventData = Partial<CreateEventData>
@@ -75,6 +76,46 @@ export async function fetchEventById(id: number) {
 
     if (error) {
         console.error('Error fetching event:', error)
+        throw new Error(error.message)
+    }
+
+    return data as EventWithOrganizer
+}
+
+// Fetch single event by Slug (with ID fallback)
+export async function fetchEventBySlug(slug: string) {
+    const supabase = createClient()
+
+    // 1. Try fetching by slug
+    let { data, error } = await supabase
+        .from('events')
+        .select(`
+      *,
+      organizer:profiles!events_organizer_id_fkey(full_name, email)
+    `)
+        .eq('slug', slug)
+        .single()
+
+    // 2. If no data found (error) and slug looks like a number (ID), try fetching by ID
+    if (error && !isNaN(Number(slug))) {
+        const { data: dataById, error: errorById } = await supabase
+            .from('events')
+            .select(`
+        *,
+        organizer:profiles!events_organizer_id_fkey(full_name, email)
+        `)
+            .eq('id', slug)
+            .single()
+
+        // If ID fetch succeeded, use that data
+        if (!errorById && dataById) {
+            data = dataById
+            error = null
+        }
+    }
+
+    if (error) {
+        console.error('Error fetching event by slug:', error)
         throw new Error(error.message)
     }
 
@@ -161,4 +202,5 @@ export async function deleteEvent(id: number) {
 // SWR fetcher functions
 export const eventsFetcher = () => fetchActiveEvents()
 export const eventByIdFetcher = (id: number) => () => fetchEventById(id)
+export const eventBySlugFetcher = (slug: string) => () => fetchEventBySlug(slug)
 export const organizerEventsFetcher = (organizerId: string) => () => fetchOrganizerEvents(organizerId)

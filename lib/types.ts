@@ -5,6 +5,23 @@ export type User = {
     full_name: string
     role: 'runner' | 'organizer'
     created_at: string
+    wallet_balance?: number
+    bank_name?: string
+    bank_account_number?: string
+    bank_account_holder?: string
+}
+
+export type Withdrawal = {
+    id: number
+    user_id: string
+    amount: number
+    status: 'pending' | 'approved' | 'rejected'
+    bank_details: {
+        bank_name: string
+        account_number: string
+        account_holder: string
+    }
+    created_at: string
 }
 
 export type Event = {
@@ -23,6 +40,7 @@ export type Event = {
     status: 'draft' | 'active' | 'cancelled' | 'completed'
     created_at: string
     updated_at: string
+    slug: string
     form_schema?: any
 }
 
